@@ -33,7 +33,29 @@ export default function ChatInterface() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [conversationId] = useState(() => `conv_${Date.now()}`)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // API base URL - adjust if your backend runs on a different port
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+
+  // Test backend connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/health`)
+        if (response.ok) {
+          console.log("✅ Backend connection successful")
+        } else {
+          console.warn("⚠️ Backend responded but may have issues")
+        }
+      } catch (error) {
+        console.error("❌ Backend connection failed:", error)
+        console.log(`Make sure the backend is running at ${API_BASE_URL}`)
+      }
+    }
+    testConnection()
+  }, [API_BASE_URL])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -53,17 +75,44 @@ export default function ChatInterface() {
     setInput("")
     setLoading(true)
 
-    // Simulate AI response
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      // Call FastAPI backend
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: text,
+          conversation_id: conversationId,
+        }),
+      })
 
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "ai",
-      content: `Based on your question about "${text}", here's what I found in our documentation. This information comes from our internal systems and external resources. You can click on the source tags below to see the full documentation.`,
-      sources: ["Confluence: Engineering Handbook", "GitHub: project44-docs", "Runway Portal"],
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        content: data.response,
+        sources: data.sources || [],
+      }
+      setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      console.error("Error sending message:", error)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        content: `Sorry, I'm having trouble connecting to the server at ${API_BASE_URL}. Please make sure the backend is running on port 8000. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        sources: [],
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setLoading(false)
     }
-    setMessages((prev) => [...prev, aiMessage])
-    setLoading(false)
   }
 
   const handleQuickAction = (action: string) => {
@@ -121,7 +170,7 @@ export default function ChatInterface() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
                 handleSendMessage(input)

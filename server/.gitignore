@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Virtual environment (keep this in gitignore)
+venv/
+
+# Environment variables
+.env
+
+# Vector database
+chroma_db/
+*.db
+*.sqlite
+
+# Documents
+documents/
+*.pdf
+*.docx
+*.txt
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
