@@ -225,6 +225,222 @@ async def get_document_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting stats: {str(e)}")
 
+@app.get("/api/documents/list")
+async def list_documents():
+    """List all documents in the collection with their metadata"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+    
+    try:
+        # Get all documents from ChromaDB
+        results = rag_pipeline.collection.get()
+        
+        # Group by source (filename)
+        documents_by_source = {}
+        for i, doc_id in enumerate(results.get('ids', [])):
+            metadata = results.get('metadatas', [{}])[i] if results.get('metadatas') else {}
+            source = metadata.get('source', 'unknown')
+            category = metadata.get('category', 'general')
+            chunk_index = metadata.get('chunk_index', 0)
+            total_chunks = metadata.get('total_chunks', 1)
+            
+            if source not in documents_by_source:
+                documents_by_source[source] = {
+                    "filename": source,
+                    "category": category,
+                    "total_chunks": total_chunks,
+                    "chunk_ids": []
+                }
+            
+            documents_by_source[source]["chunk_ids"].append(doc_id)
+        
+        # Convert to list format
+        documents_list = [
+            {
+                "filename": info["filename"],
+                "category": info["category"],
+                "total_chunks": info["total_chunks"],
+                "chunk_count": len(info["chunk_ids"])
+            }
+            for info in documents_by_source.values()
+        ]
+        
+        return JSONResponse(content={
+            "total_documents": len(documents_list),
+            "total_chunks": len(results.get('ids', [])),
+            "documents": documents_list
+        })
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error listing documents:")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
+
+@app.get("/api/documents/{filename}")
+async def get_document_details(filename: str):
+    """Get detailed information about a specific document"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+    
+    try:
+        # Get all documents with matching source
+        results = rag_pipeline.collection.get(
+            where={"source": filename}
+        )
+        
+        if not results.get('ids'):
+            raise HTTPException(status_code=404, detail=f"Document '{filename}' not found")
+        
+        # Extract metadata
+        metadatas = results.get('metadatas', [])
+        documents = results.get('documents', [])
+        
+        if metadatas:
+            first_metadata = metadatas[0]
+            return JSONResponse(content={
+                "filename": filename,
+                "category": first_metadata.get('category', 'general'),
+                "total_chunks": len(results.get('ids', [])),
+                "chunk_ids": results.get('ids', []),
+                "sample_chunk": documents[0][:200] + "..." if documents and len(documents[0]) > 200 else (documents[0] if documents else "")
+            })
+        else:
+            return JSONResponse(content={
+                "filename": filename,
+                "total_chunks": len(results.get('ids', [])),
+                "chunk_ids": results.get('ids', [])
+            })
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error getting document details:")
+        print(f"Filename: {filename}")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Error getting document details: {str(e)}")
+
+@app.delete("/api/documents/{filename}")
+async def delete_document(filename: str):
+    """Delete a specific document from the collection"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+    
+    try:
+        # Get all chunk IDs for this document
+        results = rag_pipeline.collection.get(
+            where={"source": filename}
+        )
+        
+        if not results.get('ids'):
+            raise HTTPException(status_code=404, detail=f"Document '{filename}' not found")
+        
+        chunk_ids = results.get('ids', [])
+        
+        # Delete all chunks
+        rag_pipeline.collection.delete(ids=chunk_ids)
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": f"Document '{filename}' deleted successfully",
+            "chunks_deleted": len(chunk_ids)
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error deleting document:")
+        print(f"Filename: {filename}")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+
+@app.delete("/api/documents/category/{category}")
+async def delete_documents_by_category(category: str):
+    """Delete all documents in a specific category"""
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+    
+    try:
+        # Get all chunk IDs for this category
+        results = rag_pipeline.collection.get(
+            where={"category": category}
+        )
+        
+        if not results.get('ids'):
+            raise HTTPException(status_code=404, detail=f"No documents found in category '{category}'")
+        
+        chunk_ids = results.get('ids', [])
+        
+        # Group by source to count documents
+        sources = set()
+        for metadata in results.get('metadatas', []):
+            sources.add(metadata.get('source', 'unknown'))
+        
+        # Delete all chunks
+        rag_pipeline.collection.delete(ids=chunk_ids)
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": f"All documents in category '{category}' deleted successfully",
+            "documents_deleted": len(sources),
+            "chunks_deleted": len(chunk_ids)
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error deleting documents by category:")
+        print(f"Category: {category}")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Error deleting documents: {str(e)}")
+
+@app.delete("/api/documents")
+async def delete_all_documents(confirm: bool = False):
+    """Delete all documents from the collection (requires confirm=true)"""
+    if not confirm:
+        raise HTTPException(
+            status_code=400, 
+            detail="This will delete ALL documents. Set confirm=true to proceed."
+        )
+    
+    if rag_pipeline is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
+    
+    try:
+        # Get all chunk IDs
+        results = rag_pipeline.collection.get()
+        chunk_ids = results.get('ids', [])
+        
+        if not chunk_ids:
+            return JSONResponse(content={
+                "status": "success",
+                "message": "No documents to delete",
+                "chunks_deleted": 0
+            })
+        
+        # Delete all chunks
+        rag_pipeline.collection.delete(ids=chunk_ids)
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "All documents deleted successfully",
+            "chunks_deleted": len(chunk_ids)
+        })
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Error deleting all documents:")
+        print(f"Error: {str(e)}")
+        print(f"Traceback:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Error deleting documents: {str(e)}")
+
 # Analyst endpoints for document upload and chat
 @app.post("/api/analyst/upload", response_model=AnalystUploadResponse)
 async def analyst_upload(file: UploadFile = File(...)):

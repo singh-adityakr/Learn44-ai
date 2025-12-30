@@ -13,8 +13,14 @@ export default function SourceDrawer({ source, onClose }: SourceDrawerProps) {
     "Confluence: Engineering Handbook": {
       title: "Engineering Handbook",
       content:
-        "The Engineering Handbook contains all technical guidelines, best practices, and architectural decisions for project44. It covers coding standards, deployment procedures, and troubleshooting guides.",
-      link: "https://confluence.example.com/engineering",
+        "The Engineering Handbook contains all technical guidelines, best practices, and architectural decisions for project44. It covers coding standards, deployment procedures, and troubleshooting guides. Access the full documentation on Confluence.",
+      link: "https://project44.atlassian.net/wiki/spaces/FDNENG/overview",
+    },
+    "GitHub: project44": {
+      title: "project44 GitHub Organization",
+      content:
+        "The official project44 GitHub organization hosts all repositories including the design system (manifest), SDKs, documentation, infrastructure templates, and open source projects. Explore repositories, contribute to projects, and access code examples.",
+      link: "https://github.com/project44",
     },
     "GitHub: project44-docs": {
       title: "Project44 Documentation",

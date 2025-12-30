@@ -63,7 +63,7 @@ export default function DocumentAnalyzer() {
       const response = await fetch(`${API_BASE_URL}/api/analyst/upload`, {
         method: "POST",
         body: formData,
-      })
+    })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Upload failed" }))
@@ -212,13 +212,13 @@ export default function DocumentAnalyzer() {
                     </>
                   ) : (
                     <>
-                      <div className="flex justify-center">
-                        <Upload className="w-12 h-12 text-primary/60" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-semibold text-foreground">Drag files here</p>
-                        <p className="text-sm text-muted-foreground mt-1">or click to browse your computer</p>
-                      </div>
+                  <div className="flex justify-center">
+                    <Upload className="w-12 h-12 text-primary/60" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">Drag files here</p>
+                    <p className="text-sm text-muted-foreground mt-1">or click to browse your computer</p>
+                  </div>
                       <p className="text-xs text-muted-foreground">Supported: PDF, DOCX, TXT, Markdown, Code files</p>
                     </>
                   )}
@@ -245,7 +245,7 @@ export default function DocumentAnalyzer() {
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-primary" />
-                  <div>
+                <div>
                     <CardTitle className="text-lg">{uploadedDoc.filename}</CardTitle>
                     <CardDescription>Ask questions about this document</CardDescription>
                   </div>
@@ -284,7 +284,7 @@ export default function DocumentAnalyzer() {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
 
             {/* Input Area */}
             <div className="flex gap-2">
@@ -309,8 +309,8 @@ export default function DocumentAnalyzer() {
               >
                 <Send className="w-4 h-4" />
               </Button>
-            </div>
-          </div>
+                </div>
+              </div>
         )}
       </div>
     </div>

@@ -1,12 +1,28 @@
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Clock, AlertCircle, Zap } from "lucide-react"
+import { CheckCircle2, Clock, AlertCircle, Zap, Circle } from "lucide-react"
 
 export default function Dashboard() {
-  const onboardingProgress = 35
-  const tasksCompleted = 7
+  const [completedTasks, setCompletedTasks] = useState<Set<number>>(new Set())
+  
+  const toggleTask = (index: number) => {
+    setCompletedTasks((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+  
+  const baseTasksCompleted = 7
+  const tasksCompleted = baseTasksCompleted + completedTasks.size
   const tasksTotal = 20
+  const onboardingProgress = Math.round((tasksCompleted / tasksTotal) * 100)
 
   const recentActivities = [
     { title: "Completed Docker Setup", time: "2 hours ago", icon: CheckCircle2, color: "text-green-500" },
@@ -86,27 +102,57 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {upcomingTasks.map((task, idx) => (
+                  {upcomingTasks.map((task, idx) => {
+                    const isCompleted = completedTasks.has(idx)
+                    return (
                     <div
                       key={idx}
-                      className="flex items-start gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                        onClick={() => toggleTask(idx)}
+                        className="flex items-start gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer group"
                     >
-                      <div className="w-6 h-6 rounded-full border-2 border-primary flex-shrink-0 mt-1" />
+                        <div className="flex-shrink-0 mt-1">
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-6 h-6 text-green-500" />
+                          ) : (
+                            <Circle className="w-6 h-6 text-primary border-2 border-primary rounded-full" />
+                          )}
+                        </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground">{task.title}</p>
+                          <p
+                            className={`font-medium transition-all ${
+                              isCompleted
+                                ? "text-muted-foreground line-through"
+                                : "text-foreground group-hover:text-primary"
+                            }`}
+                          >
+                            {task.title}
+                          </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span
                             className={`text-xs font-semibold px-2 py-1 rounded ${
-                              task.priority === "high" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                                task.priority === "high"
+                                  ? isCompleted
+                                    ? "bg-red-50 text-red-400"
+                                    : "bg-red-100 text-red-700"
+                                  : isCompleted
+                                    ? "bg-amber-50 text-amber-400"
+                                    : "bg-amber-100 text-amber-700"
                             }`}
                           >
                             {task.priority === "high" ? "High" : "Medium"}
                           </span>
-                          <span className="text-xs text-muted-foreground">{task.daysLeft} days left</span>
+                            <span
+                              className={`text-xs ${
+                                isCompleted ? "text-muted-foreground line-through" : "text-muted-foreground"
+                              }`}
+                            >
+                              {task.daysLeft} days left
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -147,13 +193,21 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {["Handbook", "GitHub", "Confluence", "Okta"].map((resource) => (
-                <button
-                  key={resource}
-                  className="p-4 rounded-xl border border-border hover:bg-primary hover:text-primary-foreground transition-colors text-center font-medium"
+              {[
+                { name: "Handbook", link: "https://project44.atlassian.net/wiki/spaces/FDNENG/overview" },
+                { name: "GitHub", link: "https://github.com/project44" },
+                { name: "Confluence", link: "https://project44.atlassian.net/wiki/spaces/FDNENG/overview" },
+                { name: "Okta", link: "https://okta.project44.com" },
+              ].map((resource) => (
+                <a
+                  key={resource.name}
+                  href={resource.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl border border-border hover:bg-primary hover:text-primary-foreground transition-colors text-center font-medium block"
                 >
-                  {resource}
-                </button>
+                  {resource.name}
+                </a>
               ))}
             </div>
           </CardContent>

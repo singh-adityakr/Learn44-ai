@@ -1,6 +1,7 @@
 
 import { LayoutDashboard, MessageCircle, Play, BarChart3, Link2, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Icon44 from "@/components/icon-44"
 
 interface SidebarProps {
   currentPage: string
@@ -50,9 +51,7 @@ export default function Sidebar({ currentPage, setCurrentPage, open, setOpen }: 
         {/* Logo/Header */}
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground font-bold text-lg">44</span>
-            </div>
+            <Icon44 size="md" />
             <div>
               <h1 className="text-lg font-bold text-sidebar-foreground">Learn44.ai</h1>
               <p className="text-xs text-slate-gray">Enterprise Onboarding</p>
@@ -95,9 +94,7 @@ export default function Sidebar({ currentPage, setCurrentPage, open, setOpen }: 
         {/* User Profile */}
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent/10">
-            <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground font-bold">
-              NV
-            </div>
+            <Icon44 size="md" className="rounded-full" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">New Voyager</p>
               <p className="text-xs text-muted-foreground">Day 1</p>
